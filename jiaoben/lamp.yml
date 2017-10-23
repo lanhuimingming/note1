@@ -1,0 +1,36 @@
+cat roles.yml
+
+- hosts: webserver
+  remote_user: root
+  roles:
+    - apache
+    
+mkdir -p /etc/ansible/roles/apache/{files,templates,tasks,handlers,vars,default,meta} 
+
+cp /etc/httpd/conf/httpd.conf /etc/ansible/roles/apache/templates/httpd.conf.j2
+cp /etc/httpd/conf.d/vhost.con /etc/ansible/roles/apache/templates/robin.conf.j2
+echo "test roles" >/etc/ansible/roles/apache/templates/index.html.j2
+echo -e "[mysqld]\n socket=/var/lib/mysql" >/etc/ansible/roles/apache/templates/my.cnf.j2
+
+cat main.yml
+ - name: install apache
+   yum: name=httpd state=present
+ - name: get main configure file
+   template: src=httpd.conf.j2 dest=/etc/httpd/conf/httpd.conf
+ - name: get sub configure file
+   template: src=robin.conf.j2 dest=/etc/httpd/conf.d/robin.conf
+ - name: create robin dir
+   file: path=/srv/robin state=directory
+ - name: get web page
+   template: src=index.html.j2 dest=/srv/robin/index.html
+   notify:
+ - name: install mariadb-server 
+   yum: name=mariadb-server state=present
+ - name: get my.cnf
+   template: src=my.cnf.j2 dest=/etc/my.cnf
+ - name: install php
+   yum: name=php
+   - restart apache
+   - restart mariadb
+
+
